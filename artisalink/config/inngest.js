@@ -12,7 +12,7 @@ export const syncUserCreation = inngest.createFunction(
         id:'sync-user-from-clerk'
     },
     {
-        event: 'clerk/user,created'
+        event: 'clerk/user.created'
     },
 
     async ({event}) => {
@@ -34,7 +34,7 @@ export const syncUserUpdation = inngest.createFunction(
         id: 'update-user-from-clerk'
     },
     {
-        event: 'clerk/user,updated'
+        event: 'clerk/user.updated'
     },
 
     async ({event}) => {

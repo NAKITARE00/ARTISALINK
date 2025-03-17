@@ -8,7 +8,7 @@ const AddProduct = () => {
   const [files, setFiles] = useState([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Earphone');
+  const [category, setCategory] = useState('WallArt');
   const [price, setPrice] = useState('');
   const [offerPrice, setOfferPrice] = useState('');
 
@@ -86,11 +86,11 @@ const AddProduct = () => {
               onChange={(e) => setCategory(e.target.value)}
               defaultValue={category}
             >
-              <option value="Earphone">WallArt</option>
-              <option value="Headphone">Furniture</option>
-              <option value="Watch">Carpets</option>
-              <option value="Smartphone">Artifacts</option>
-              <option value="Smartphone">Jewellery</option>
+              <option value="WallArt">WallArt</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Carpets">Carpets</option>
+              <option value="Artifacts">Artifacts</option>
+              <option value="Jewellery">Jewellery</option>
             </select>
           </div>
           <div className="flex flex-col gap-1 w-32">

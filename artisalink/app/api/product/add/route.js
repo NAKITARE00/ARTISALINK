@@ -65,7 +65,7 @@ export async function POST(request) {
             price: Number(price),
             offerPrice: Number(offerPrice),
             image,
-            date: new Date(), // Use new Date() here
+            date: new Date(),
         });
 
         return NextResponse.json({

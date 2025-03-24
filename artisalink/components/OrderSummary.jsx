@@ -58,7 +58,7 @@ const OrderSummary = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      if (data.sucess) {
+      if (data.success) {
         toast.success(data.message)
         setCartItems({})
         router.push('/order-placed')

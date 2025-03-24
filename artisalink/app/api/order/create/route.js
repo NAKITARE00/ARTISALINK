@@ -10,7 +10,7 @@ export async function POST(request) {
         const { userId } = getAuth(request)
         const { address, items } = await request.json()
 
-        if (!address || !items.length === 0) {
+        if (!address || items.length === 0) {
             return NextResponse.json({ success: false, message: "Invalid Data" })
         }
 
@@ -40,6 +40,6 @@ export async function POST(request) {
 
     } catch (error) {
         console.log(error)
-        return NextResponse.json({ success: false, message: error.message })
+        return NextResponse.json({ success: false, message: `Error haha: ${error.message}` })
     }
 }

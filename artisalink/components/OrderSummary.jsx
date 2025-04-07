@@ -2,172 +2,249 @@ import { useAppContext } from "@/context/AppContext";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import IntaSend from 'intasend-node';
 
 const OrderSummary = () => {
+  // Context hooks and derived values
+  const {
+    currency,
+    router,
+    getCartCount,
+    getCartAmount,
+    getToken,
+    user,
+    cartItems,
+    setCartItems
+  } = useAppContext();
 
-  const { currency, router, getCartCount, getCartAmount, getToken, user, cartItems, setCartItems } = useAppContext()
+  // State management
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const [userAddresses, setUserAddresses] = useState([]);
+  // const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
 
-  const fetchUserAddresses = async () => {
-    try {
+  // Calculate order totals
+  const taxAmount = Math.floor(getCartAmount() * 0.02);
+  const totalAmount = getCartAmount() + taxAmount;
+  const cartItemsArray = Object.keys(cartItems)
+    .map(key => ({ product: key, quantity: cartItems[key] }))
+    .filter(item => item.quantity > 0);
 
-      const token = await getToken()
-      const { data } = await axios.get('/api/user/get-address', { headers: { Authorization: `Bearer ${token}` } })
-      if (data.success) {
-        setUserAddresses(data.addresses)
-        if (data.addresses.length > 0) {
-          setSelectedAddress(data.addresses[0])
+  // Fetch user addresses on mount
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!user) return;
+
+      try {
+        const token = await getToken();
+        const { data } = await axios.get('/api/user/get-address', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (data.success) {
+          setUserAddresses(data.addresses);
+          setSelectedAddress(data.addresses[0] || null);
         }
-      } else {
-        toast.error(data.message)
+      } catch (error) {
+        console.error("Failed to fetch addresses:", error);
+      }
+    };
+
+    fetchAddresses();
+  }, [user, getToken]);
+
+  // Payment handler
+  const handlePayment = async () => {
+    // Validate inputs
+    if (!selectedAddress) return toast.error("Please select a delivery address");
+    // if (!phoneNumber) return toast.error("Please enter your phone number");
+    if (cartItemsArray.length === 0) return toast.error("Your cart is empty");
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      // 1. Create order record
+      const token = await getToken();
+      const orderRes = await axios.post('/api/order/create', {
+        address: selectedAddress._id,
+        items: cartItemsArray,
+        totalAmount
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!orderRes.data.success) {
+        throw new Error(orderRes.data.message || "Order creation failed");
       }
 
-    } catch (error) {
-      toast.error(error.message)
-    }
-  }
+      // // 2. Process payment
+      // const formattedPhone = formatPhoneNumber(phoneNumber);
+      // if (!formattedPhone) {
+      //   throw new Error("Invalid phone number format");
+      // }
 
-  const handleAddressSelect = (address) => {
+      // const intasend = new IntaSend(
+      //   `${process.env.INTASEND_PUBKEY}`,
+      //   `${process.env.INTASEND_SECKEY}`,
+      //   true,
+      // );
+
+      // const paymentResponse = await intasend.collection();
+      // paymentResponse.mpesaStkPush({
+      //   first_name: 'Customer',
+      //   last_name: 'User',
+      //   email: 'customer@example.com',
+      //   host: 'https://08aa-102-68-77-133.ngrok-free.app',
+      //   amount: totalAmount,
+      //   phone_number: 254720266088,
+      //   api_ref: 'ecommerce-payment',
+      // });
+
+      // console.log("Payment initiated:", paymentResponse);
+
+      // 3. Success flow
+      setCartItems({});
+      toast.success("Payment request sent to your phone!");
+      router.push('/mpesa');
+      router.push('/order-placed');
+    } catch (error) {
+      console.error("Payment error:", error);
+      setPaymentError(error.message);
+      toast.error(error.message || "Payment failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Helper functions
+  const formatPhoneNumber = (phone) => {
+    const digits = phone.replace(/\D/g, '');
+
+    if (digits.startsWith('0') && digits.length === 9) {
+      return `254${digits.substring(1)}`;
+    }
+    if (digits.startsWith('254') && digits.length === 12) {
+      return digits;
+    }
+    if (digits.length === 9) {
+      return `254${digits}`;
+    }
+    return null;
+  };
+
+  const toggleAddressDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  const selectAddress = (address) => {
     setSelectedAddress(address);
     setIsDropdownOpen(false);
   };
 
-  const createOrder = async () => {
-    try {
-
-      if (!selectedAddress) {
-        return toast.error('Please select an address')
-      }
-
-      let cartItemsArray = Object.keys(cartItems).map(key => ({ product: key, quantity: cartItems[key] }))
-      cartItemsArray = cartItemsArray.filter(item => item.quantity > 0)
-
-      if (cartItemsArray.length === 0) {
-        return toast.error('Cart is empty')
-      }
-
-      const token = await getToken()
-
-      const { data } = await axios.post('/api/order/create', {
-        address: selectedAddress._id,
-        items: cartItemsArray
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      if (data.success) {
-        toast.success(data.message)
-        setCartItems({})
-        router.push('/order-placed')
-      } else {
-        toast.error(data.message)
-      }
-
-    } catch (error) {
-      toast.error(error.message)
-    }
-  }
-
-  useEffect(() => {
-    if (user) {
-      fetchUserAddresses();
-    }
-
-  }, [user])
-
   return (
-    <div className="w-full md:w-96 bg-gray-500/5 p-5">
-      <h2 className="text-xl md:text-2xl font-medium text-gray-700">
+    <div className="w-full md:w-96 bg-gray-50 p-6 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
         Order Summary
       </h2>
-      <hr className="border-gray-500/30 my-5" />
-      <div className="space-y-6">
-        <div>
-          <label className="text-base font-medium uppercase text-gray-600 block mb-2">
-            Select Address
-          </label>
-          <div className="relative inline-block w-full text-sm border">
-            <button
-              className="peer w-full text-left px-4 pr-2 py-2 bg-white text-gray-700 focus:outline-none"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+
+      {/* Address Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Delivery Address
+        </label>
+        <div className="relative">
+          <button
+            onClick={toggleAddressDropdown}
+            className="w-full flex justify-between items-center px-4 py-3 bg-white border rounded-md shadow-sm"
+          >
+            <span className="truncate">
+              {selectedAddress
+                ? `${selectedAddress.area}, ${selectedAddress.city}`
+                : "Select address"}
+            </span>
+            <svg
+              className={`h-5 w-5 text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                }`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
-              <span>
-                {selectedAddress
-                  ? `${selectedAddress.fullName}, ${selectedAddress.area}, ${selectedAddress.city}, ${selectedAddress.state}`
-                  : "Select Address"}
-              </span>
-              <svg className={`w-5 h-5 inline float-right transition-transform duration-200 ${isDropdownOpen ? "rotate-0" : "-rotate-90"}`}
-                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6B7280"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
 
-            {isDropdownOpen && (
-              <ul className="absolute w-full bg-white border shadow-md mt-1 z-10 py-1.5">
-                {userAddresses.map((address, index) => (
-                  <li
-                    key={index}
-                    className="px-4 py-2 hover:bg-gray-500/10 cursor-pointer"
-                    onClick={() => handleAddressSelect(address)}
-                  >
-                    {address.fullName}, {address.area}, {address.city}, {address.state}
-                  </li>
-                ))}
+          {isDropdownOpen && (
+            <ul className="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg">
+              {userAddresses.map((address) => (
                 <li
-                  onClick={() => router.push("/add-address")}
-                  className="px-4 py-2 hover:bg-gray-500/10 cursor-pointer text-center"
+                  key={address._id}
+                  onClick={() => selectAddress(address)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b"
                 >
-                  + Add New Address
+                  {address.fullName}, {address.area}
                 </li>
-              </ul>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="text-base font-medium uppercase text-gray-600 block mb-2">
-            Promo Code
-          </label>
-          <div className="flex flex-col items-start gap-3">
-            <input
-              type="text"
-              placeholder="Enter promo code"
-              className="flex-grow w-full outline-none p-2.5 text-gray-600 border"
-            />
-            <button className="bg-orange-600 text-white px-9 py-2 hover:bg-orange-700">
-              Apply
-            </button>
-          </div>
-        </div>
-
-        <hr className="border-gray-500/30 my-5" />
-
-        <div className="space-y-4">
-          <div className="flex justify-between text-base font-medium">
-            <p className="uppercase text-gray-600">Items {getCartCount()}</p>
-            <p className="text-gray-800">{currency}{getCartAmount()}</p>
-          </div>
-          <div className="flex justify-between">
-            <p className="text-gray-600">Shipping Fee</p>
-            <p className="font-medium text-gray-800">Free</p>
-          </div>
-          <div className="flex justify-between">
-            <p className="text-gray-600">Tax (2%)</p>
-            <p className="font-medium text-gray-800">{currency}{Math.floor(getCartAmount() * 0.02)}</p>
-          </div>
-          <div className="flex justify-between text-lg md:text-xl font-medium border-t pt-3">
-            <p>Total</p>
-            <p>{currency}{getCartAmount() + Math.floor(getCartAmount() * 0.02)}</p>
-          </div>
+              ))}
+              <li
+                onClick={() => router.push("/add-address")}
+                className="px-4 py-2 text-blue-600 hover:bg-gray-100 cursor-pointer text-center"
+              >
+                + Add New Address
+              </li>
+            </ul>
+          )}
         </div>
       </div>
 
-      <button onClick={createOrder} className="w-full bg-orange-600 text-white py-3 mt-5 hover:bg-orange-700">
-        Place Order
+      {/* Payment Details */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          M-Pesa Payment
+        </label>
+        {/* <input
+          type="tel"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+          placeholder="e.g. 0722000000"
+          className="w-full px-4 py-3 border rounded-md shadow-sm"
+        /> */}
+        {paymentError && (
+          <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+        )}
+        <p className="mt-1 text-xs text-gray-500">
+          Enter your M-Pesa registered phone number
+        </p>
+      </div>
+
+      {/* Order Breakdown */}
+      <div className="space-y-3 mb-6">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Items ({getCartCount()})</span>
+          <span>{currency}{getCartAmount()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Shipping</span>
+          <span>Free</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Tax (2%)</span>
+          <span>{currency}{taxAmount}</span>
+        </div>
+        <div className="flex justify-between pt-3 border-t font-medium text-lg">
+          <span>Total</span>
+          <span>{currency}{totalAmount}</span>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        onClick={handlePayment}
+        disabled={isProcessing}
+        className={`w-full py-3 px-4 rounded-md text-white font-medium ${isProcessing
+          ? "bg-orange-400 cursor-not-allowed"
+          : "bg-orange-600 hover:bg-orange-700"
+          }`}
+      >
+        {isProcessing ? "Processing..." : `Pay ${currency}${totalAmount}`}
       </button>
     </div>
   );

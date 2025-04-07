@@ -4,9 +4,13 @@ const userSchema = new mongoose.Schema({
     _id: {
         type: String,
         required: true,
-    }, 
+    },
 
     name: {
+        type: String,
+        required: true,
+    },
+    role: {
         type: String,
         required: true,
     },
@@ -15,15 +19,19 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
-    imageUrl : {
+    imageUrl: {
         type: String,
         required: true,
     },
     cartItems: {
         type: Object,
         default: {}
-    }
-}, {minimize: false});
+    },
+    password: {
+        type: String,
+        required: true,
+    },
+}, { minimize: false });
 
 const User = mongoose.models.user || mongoose.model("user", userSchema);
 

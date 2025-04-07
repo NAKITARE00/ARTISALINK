@@ -8,7 +8,7 @@ const outfit = Outfit({ subsets: ['latin'], weight: ["300", "400", "500"] })
 
 export const metadata = {
   title: "Artisalink",
-  description: "E-Commerce with Next.js ",
+  description: "Artisalink",
 };
 
 export default function RootLayout({ children }) {

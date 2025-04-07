@@ -6,14 +6,16 @@ const userSchema = new mongoose.Schema({
         required: true,
     },
 
-    name: {
+    first_name: {
         type: String,
         required: true,
     },
-    role: {
+
+    last_name: {
         type: String,
         required: true,
     },
+
     email: {
         type: String,
         required: true,
@@ -27,10 +29,7 @@ const userSchema = new mongoose.Schema({
         type: Object,
         default: {}
     },
-    password: {
-        type: String,
-        required: true,
-    },
+
 }, { minimize: false });
 
 const User = mongoose.models.user || mongoose.model("user", userSchema);

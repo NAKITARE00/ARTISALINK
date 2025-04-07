@@ -96,28 +96,3 @@ export const createUserOrder = inngest.createFunction(
     }
 )
 
-//Ingest Function To Create User Roles in Database
-export const createUserRole = inngest.createFunction(
-    {
-        id: 'create-user-role',
-        batchEvents: {
-            maxSize: 5,
-            timeout: '5s'
-        }
-    },
-    { event: 'clerk/user.created' },
-    async ({ events }) => {
-
-        const roles = events.map((event) => {
-            return {
-                _id: event.data.id,
-                role: event.data.role
-            }
-        })
-
-        await connectDB()
-        await User.insertMany(roles)
-
-        return { success: true, processed: roles.length }
-    }
-)

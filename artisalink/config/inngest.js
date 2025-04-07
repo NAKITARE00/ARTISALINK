@@ -17,12 +17,11 @@ export const syncUserCreation = inngest.createFunction(
     },
 
     async ({ event }) => {
-        const { id, name, email_addresses, role, image_url } = event.data;
+        const { id, first_name, last_name, email_addresses, image_url } = event.data;
         const userData = {
             _id: id,
             email: email_addresses[0].email_address,
-            name: name,
-            role: role,
+            name: first_name + " " + last_name,
             imageUrl: image_url,
         }
         await connectDB();
@@ -40,12 +39,11 @@ export const syncUserUpdation = inngest.createFunction(
     },
 
     async ({ event }) => {
-        const { id, name, email_addresses, role, image_url } = event.data;
+        const { id, first_name, last_name, email_addresses, image_url } = event.data;
         const userData = {
             _id: id,
             email: email_addresses[0].email_address,
-            name: name,
-            role: role,
+            name: first_name + " " + last_name,
             imageUrl: image_url,
         }
         await connectDB();
@@ -95,5 +93,31 @@ export const createUserOrder = inngest.createFunction(
         await Order.insertMany(orders)
 
         return { success: true, processed: orders.length }
+    }
+)
+
+//Ingest Function To Create User Roles in Database
+export const createUserRole = inngest.createFunction(
+    {
+        id: 'create-user-role',
+        batchEvents: {
+            maxSize: 5,
+            timeout: '5s'
+        }
+    },
+    { event: 'clerk/user.created' },
+    async ({ events }) => {
+
+        const roles = events.map((event) => {
+            return {
+                _id: event.data.id,
+                role: event.data.role
+            }
+        })
+
+        await connectDB()
+        await User.insertMany(roles)
+
+        return { success: true, processed: roles.length }
     }
 )

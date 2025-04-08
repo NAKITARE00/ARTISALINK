@@ -1,15 +1,34 @@
 "use client"
 import React from "react";
 import { assets, BagIcon, BoxIcon, CartIcon, HomeIcon } from "@/assets/assets";
-import Link from "next/link"
+import Link from "next/link";
 import { useAppContext } from "@/context/AppContext";
 import Image from "next/image";
 import { useClerk, UserButton } from "@clerk/nextjs";
+import axios from "axios";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 const Navbar = () => {
-
-  const { user, isSeller, router } = useAppContext();
+  const { user, router } = useAppContext(); // Get userRole from context
   const { openSignIn } = useClerk();
+  const [userRole, setUserRole] = useState(null);
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (user?.id) {
+        try {
+          const response = await axios.get(`/api/user/role/${user.id}`);
+          setUserRole(response.data);
+
+        } catch (error) {
+          toast.error(error.message);
+        }
+      }
+
+    };
+    checkUserRole();
+  }, [user]);
+  console.log(userRole?.role?.role);
 
   return (
     <nav className="flex items-center justify-between px-6 md:px-16 lg:px-32 py-3 border-b border-gray-300 text-gray-700">
@@ -33,11 +52,19 @@ const Navbar = () => {
           Contact
         </Link>
 
-        {isSeller && <button onClick={() => router.push('/seller')} className="text-xs border px-4 py-1.5 rounded-full">Seller Dashboard</button>}
+        {/* Show Seller Dashboard only if user has role "Seller" */}
 
+        {userRole?.role?.role === 'Seller' && (
+          <button
+            onClick={() => router.push('/seller')}
+            className="text-xs border px-4 py-1.5 rounded-full"
+          >
+            Seller Dashboard
+          </button>
+        )}
       </div>
 
-      <ul className="hidden md:flex items-center gap-4 ">
+      <ul className="hidden md:flex items-center gap-4">
         <Image className="w-4 h-4" src={assets.search_icon} alt="search icon" />
         {
           user
@@ -59,7 +86,15 @@ const Navbar = () => {
       </ul>
 
       <div className="flex items-center md:hidden gap-3">
-        {isSeller && <button onClick={() => router.push('/seller')} className="text-xs border px-4 py-1.5 rounded-full">Seller Dashboard</button>}
+        {/* Show Seller Dashboard only if user has role "Seller" */}
+        {userRole?.role?.role === 'Seller' && (
+          <button
+            onClick={() => router.push('/seller')}
+            className="text-xs border px-4 py-1.5 rounded-full"
+          >
+            Seller Dashboard
+          </button>
+        )}
         {
           user
             ? <>
@@ -84,7 +119,7 @@ const Navbar = () => {
             </button>
         }
       </div>
-    </nav >
+    </nav>
   );
 };
 

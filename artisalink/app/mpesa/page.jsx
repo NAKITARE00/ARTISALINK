@@ -1,43 +1,49 @@
-// 'use Client'
-// import IntaSend from "intasend-node";
+'use client'
+import { useEffect } from 'react';
+import axios from 'axios';
+import { useSearchParams } from 'next/navigation';
+import { useAppContext } from '@/context/AppContext';
 
-// let intasend = new IntaSend(
-//     `${process.env.INTASEND_PUBKEY}`,
-//     `${process.env.INTASEND_SECKEY}`,
-//     true,
-// );
+export default function TriggerSTKPush() {
+    const searchParams = useSearchParams();
+    const phone = searchParams.get('phone');
+    const amount = searchParams.get('amount');
+    const { router } = useAppContext()
 
-// const Mpesa = () => {
+    useEffect(() => {
+        const triggerSTK = async () => {
+            if (!phone || !amount) {
+                console.warn('Missing phone or amount in query params');
+                return;
+            }
 
-//     const onClickHandler = async (e) => {
-//         e.preventDefault()
-//         let collection = intasend.collection();
-//         collection
-//             .mpesaStkPush({
-//                 first_name: 'Joe',
-//                 last_name: 'Doe',
-//                 email: 'joe@doe.com',
-//                 host: 'https://8b3c-41-90-172-56.ngrok-free.app ',
-//                 amount: 1,
-//                 phone_number: '',
-//                 api_ref: 'test-' + Date.now(),
-//             })
-//             .then((resp) => {
-//                 console.log('Payment initiated:', resp);
-//             })
-//             .catch((err) => {
-//                 console.error('Payment error:', err);
-//             });
-//     }
-//     return (
-//         <div>
-//             <button onClick={onClickHandler}>
-//                 MPESA
-//             </button>
-//         </div>
-//     )
+            try {
+                const res = await axios.post('/api/stk-push', {
+                    phone_number: phone,
+                    amount: parseFloat(amount),
+                    email: 'joe@doe.com',
+                    host: 'https://yourwebsite.com',
+                    api_ref: 'test',
+                });
 
-// }
+                console.log('STK Response:', res.data);
+            } catch (err) {
+                console.error('STK Error:', err);
+            }
+        };
 
-// export default Mpesa
+        triggerSTK();
+        setTimeout(() => {
+            router.push('/order-placed')
+        }, 5000)
+    }, [phone, amount]);
+
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <p>Triggering M-Pesa STK Push for {phone}...</p>
+        </div>
+    );
+}
+
+
 

@@ -22,31 +22,12 @@ const Admin = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [roles, setRoles] = useState([]);
+
 
 
 
     useEffect(() => {
-        setTimeout(() => {
-
-            setStats({
-                totalUsers: 124,
-                totalArtisans: 42,
-                totalProducts: 87,
-                totalOrders: 215,
-                revenue: 8450.75,
-                monthlyGrowth: 12.5,
-                popularCategories: [
-                    { name: 'Home Decor', value: 35 },
-                    { name: 'Jewelry', value: 28 },
-                    { name: 'Art', value: 20 },
-                    { name: 'Clothing', value: 15 },
-                    { name: 'Other', value: 2 }
-                ]
-            });
-
-            setIsLoading(false);
-        }, 1000);
-
         const fetchUsers = async () => {
             try {
                 const token = await getToken();
@@ -114,10 +95,49 @@ const Admin = () => {
             }
         }
 
+        console.log(orders.product)
+
+        const fetchRoles = async () => {
+            try {
+                const token = await getToken();
+
+                const { data } = await axios.get('/api/admin/role', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+
+                if (data.success) {
+                    setRoles(data.roles);
+                } else {
+                    toast.error(data.message);
+                }
+            } catch (error) {
+                toast.error(error.message);
+            }
+        };
+
+
         fetchUsers();
         fetchProducts();
         fetchOrders();
+        fetchRoles();
     }, []);
+
+    useEffect(() => {
+        if (users.length || products.length || orders.length || roles.length) {
+            const artisanRoles = roles.filter(role => role.role === 'Seller');
+            const artisanUserIds = artisanRoles.map(role => role.userId);
+            const uniqueArtisans = users.filter(user => artisanUserIds.includes(user._id));
+
+            setStats({
+                totalUsers: users.length,
+                totalArtisans: uniqueArtisans.length,
+                totalProducts: products.length,
+                totalOrders: orders.length
+            });
+        }
+    }, [users, products, orders, roles]);
 
     // Chart data
     const orderData = [
@@ -235,13 +255,14 @@ const Admin = () => {
                                 Orders
                             </button>
                         </li>
+
                         <li>
                             <button
-                                onClick={() => setActiveTab('reports')}
-                                className={`flex items-center w-full p-3 rounded-lg ${activeTab === 'reports' ? 'bg-indigo-700' : 'hover:bg-indigo-700'}`}
+                                onClick={() => setActiveTab('roles')}
+                                className={`flex items-center w-full p-3 rounded-lg ${activeTab === 'roles' ? 'bg-indigo-700' : 'hover:bg-indigo-700'}`}
                             >
-                                <FiActivity className="mr-3" />
-                                Reports & Analytics
+                                <FiSettings className="mr-3" />
+                                Roles
                             </button>
                         </li>
 
@@ -265,8 +286,8 @@ const Admin = () => {
                         {activeTab === 'users' && 'User Management'}
                         {activeTab === 'products' && 'Product Management'}
                         {activeTab === 'orders' && 'Order Management'}
+                        {activeTab === 'roles' && 'Role Management'}
                         {activeTab === 'reports' && 'Reports & Analytics'}
-                        {activeTab === 'logs' && 'System Logs'}
                     </h2>
                     <div className="flex items-center space-x-4">
                         <div className="relative">
@@ -307,20 +328,18 @@ const Admin = () => {
                                                     <FiUsers size={20} />
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2"><span className="text-green-500">+{stats.monthlyGrowth}%</span> from last month</p>
                                         </div>
 
                                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-500">Artisans</p>
-                                                    <p className="text-3xl font-semibold mt-1">{stats.totalArtisans}</p>
+                                                    <p className="text-sm font-medium text-gray-500">Orders</p>
+                                                    <p className="text-3xl font-semibold mt-1">{stats.totalOrders}</p>
                                                 </div>
                                                 <div className="p-3 rounded-lg bg-green-50 text-green-600">
                                                     <FiUsers size={20} />
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2"><span className="text-green-500">+8.2%</span> from last month</p>
                                         </div>
 
                                         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
@@ -333,96 +352,6 @@ const Admin = () => {
                                                     <FiShoppingBag size={20} />
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-2"><span className="text-green-500">+5.7%</span> from last month</p>
-                                        </div>
-
-                                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                                                    <p className="text-3xl font-semibold mt-1">${stats.revenue}</p>
-                                                </div>
-                                                <div className="p-3 rounded-lg bg-purple-50 text-purple-600">
-                                                    <FiDollarSign size={20} />
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-gray-500 mt-2"><span className="text-green-500">+15.3%</span> from last month</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                            <h3 className="text-lg font-semibold mb-4">Monthly Orders</h3>
-                                            <div className="h-64">
-                                                <BarChart width={500} height={300} data={orderData}>
-                                                    <CartesianGrid strokeDasharray="3 3" />
-                                                    <XAxis dataKey="name" />
-                                                    <YAxis />
-                                                    <Tooltip />
-                                                    <Legend />
-                                                    <Bar dataKey="orders" fill="#8884d8" />
-                                                </BarChart>
-                                            </div>
-                                        </div>
-
-                                        {/* <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                            <h3 className="text-lg font-semibold mb-4">Product Categories</h3>
-                                            <div className="h-64 flex justify-center">
-                                                <PieChart width={400} height={300}>
-                                                    <Pie
-                                                        data={stats.popularCategories}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        labelLine={false}
-                                                        outerRadius={80}
-                                                        fill="#8884d8"
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                    >
-                                                        {stats.popularCategories.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip />
-                                                </PieChart>
-                                            </div>
-                                        </div> */}
-                                    </div>
-
-                                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                        <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {orders.slice(0, 5).map((order) => (
-                                                        <tr key={order._id}>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{order._id}</td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.product}</td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.amount}</td>
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                  ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                                        order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                                                                            'bg-yellow-100 text-yellow-800'}`}>
-                                                                    {order.status}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.date}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -440,27 +369,16 @@ const Admin = () => {
                                             <thead className="bg-gray-50">
                                                 <tr>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {users.map((user) => (
                                                     <tr key={user._id}>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user._id}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.name}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{user.role}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.joined}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            <button
-                                                                onClick={() => handleEdit('user', user)}
-                                                                className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                            >
-                                                                Edit
-                                                            </button>
                                                             <button
                                                                 onClick={() => handleDelete('user', user._id)}
                                                                 className="text-red-600 hover:text-red-900"
@@ -479,12 +397,6 @@ const Admin = () => {
                             {/* Products Tab */}
                             {activeTab === 'products' && (
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-lg font-semibold">Product Management</h3>
-                                        <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-                                            Add New Product
-                                        </button>
-                                    </div>
 
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-200">
@@ -504,9 +416,9 @@ const Admin = () => {
                                                     <tr key={product._id}>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product._id}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.name}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">KSH{product.price}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.artisan}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">KSH{product.offerPrice}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.userId}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.price}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             <button
@@ -535,41 +447,26 @@ const Admin = () => {
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-lg font-semibold">Order Management</h3>
-                                        <div className="flex space-x-2">
-                                            <select className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                                <option>All Status</option>
-                                                <option>Pending</option>
-                                                <option>Processing</option>
-                                                <option>Shipped</option>
-                                                <option>Completed</option>
-                                                <option>Cancelled</option>
-                                            </select>
-                                            <input
-                                                type="date"
-                                                className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                            />
-                                        </div>
                                     </div>
-
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-gray-50">
                                                 <tr>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th> */}
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th> */}
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {orders.map((order) => (
                                                     <tr key={order._id}>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{order._id}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.customer}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.product}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.userId}</td>
+                                                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.product}</td> */}
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">KSH{order.amount}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -580,12 +477,53 @@ const Admin = () => {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.date}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                             <button
                                                                 onClick={() => handleEdit('order', order)}
                                                                 className="text-indigo-600 hover:text-indigo-900 mr-3"
                                                             >
                                                                 View
+                                                            </button>
+                                                        </td> */}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Roles Tab */}
+                            {activeTab === 'roles' && (
+                                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-lg font-semibold">Role Management</h3>
+                                    </div>
+
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {roles.map((role) => (
+                                                    <tr key={role._id}>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{role._id}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{role._id}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{role.name}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{role.role}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                            <button
+                                                                onClick={() => handleDelete('role', role._id)}
+                                                                className="text-red-600 hover:text-red-900"
+                                                            >
+                                                                Delete
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -595,70 +533,6 @@ const Admin = () => {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Reports Tab */}
-                            {activeTab === 'reports' && (
-                                <div>
-                                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-6">
-                                        <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
-                                        <div className="h-80">
-                                            <BarChart width={800} height={300} data={orderData}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="name" />
-                                                <YAxis />
-                                                <Tooltip />
-                                                <Legend />
-                                                <Bar dataKey="orders" fill="#8884d8" name="Orders" />
-                                            </BarChart>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                            <h3 className="text-lg font-semibold mb-4">Revenue by Category</h3>
-                                            <div className="h-64">
-                                                <PieChart width={400} height={300}>
-                                                    <Pie
-                                                        data={stats.popularCategories}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        labelLine={false}
-                                                        outerRadius={80}
-                                                        fill="#8884d8"
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                    >
-                                                        {stats.popularCategories.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip />
-                                                </PieChart>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-                                            <h3 className="text-lg font-semibold mb-4">Top Selling Products</h3>
-                                            <div className="space-y-4">
-                                                {products.slice(0, 5).map((product, index) => (
-                                                    <div key={product._id} className="flex items-center">
-                                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                                                            <span className="text-gray-600 font-medium">{index + 1}</span>
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h4 className="text-sm font-medium">{product.name}</h4>
-                                                            <p className="text-xs text-gray-500">{product.category}</p>
-                                                        </div>
-                                                        <div className="text-sm font-semibold">KSH{product.price}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-
                         </>
                     )}
                 </main>

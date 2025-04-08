@@ -146,7 +146,7 @@ const UpdateProductModal = ({ isOpen, onClose, product }) => {
                         </div>
                         <div className="flex flex-col gap-1 w-32">
                             <label className="text-base font-medium" htmlFor="product-price">
-                                Product Price
+                                Stock
                             </label>
                             <input
                                 id="product-price"

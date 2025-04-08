@@ -2,10 +2,8 @@ import { useAppContext } from "@/context/AppContext";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import IntaSend from 'intasend-node';
 
 const OrderSummary = () => {
-  // Context hooks and derived values
   const {
     currency,
     router,
@@ -17,22 +15,19 @@ const OrderSummary = () => {
     setCartItems
   } = useAppContext();
 
-  // State management
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userAddresses, setUserAddresses] = useState([]);
-  // const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
 
-  // Calculate order totals
   const taxAmount = Math.floor(getCartAmount() * 0.02);
   const totalAmount = getCartAmount() + taxAmount;
   const cartItemsArray = Object.keys(cartItems)
     .map(key => ({ product: key, quantity: cartItems[key] }))
     .filter(item => item.quantity > 0);
 
-  // Fetch user addresses on mount
   useEffect(() => {
     const fetchAddresses = async () => {
       if (!user) return;
@@ -55,19 +50,20 @@ const OrderSummary = () => {
     fetchAddresses();
   }, [user, getToken]);
 
-  // Payment handler
   const handlePayment = async () => {
-    // Validate inputs
     if (!selectedAddress) return toast.error("Please select a delivery address");
-    // if (!phoneNumber) return toast.error("Please enter your phone number");
+    if (!phoneNumber) return toast.error("Please enter your phone number");
     if (cartItemsArray.length === 0) return toast.error("Your cart is empty");
+
+    const formattedPhone = formatPhoneNumber(phoneNumber);
+    if (!formattedPhone) return toast.error("Invalid phone number format");
 
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
-      // 1. Create order record
       const token = await getToken();
+
       const orderRes = await axios.post('/api/order/create', {
         address: selectedAddress._id,
         items: cartItemsArray,
@@ -80,36 +76,11 @@ const OrderSummary = () => {
         throw new Error(orderRes.data.message || "Order creation failed");
       }
 
-      // // 2. Process payment
-      // const formattedPhone = formatPhoneNumber(phoneNumber);
-      // if (!formattedPhone) {
-      //   throw new Error("Invalid phone number format");
-      // }
-
-      // const intasend = new IntaSend(
-      //   `${process.env.INTASEND_PUBKEY}`,
-      //   `${process.env.INTASEND_SECKEY}`,
-      //   true,
-      // );
-
-      // const paymentResponse = await intasend.collection();
-      // paymentResponse.mpesaStkPush({
-      //   first_name: 'Customer',
-      //   last_name: 'User',
-      //   email: 'customer@example.com',
-      //   host: 'https://08aa-102-68-77-133.ngrok-free.app',
-      //   amount: totalAmount,
-      //   phone_number: 254720266088,
-      //   api_ref: 'ecommerce-payment',
-      // });
-
-      // console.log("Payment initiated:", paymentResponse);
-
-      // 3. Success flow
       setCartItems({});
-      toast.success("Payment request sent to your phone!");
-      router.push('/mpesa');
-      router.push('/order-placed');
+      toast.success("Payment request sent to your phone...");
+
+      // Redirect to STK Push trigger page
+      router.push(`/mpesa?phone=${formattedPhone}&amount=${totalAmount}`);
     } catch (error) {
       console.error("Payment error:", error);
       setPaymentError(error.message);
@@ -119,11 +90,9 @@ const OrderSummary = () => {
     }
   };
 
-  // Helper functions
   const formatPhoneNumber = (phone) => {
     const digits = phone.replace(/\D/g, '');
-
-    if (digits.startsWith('0') && digits.length === 9) {
+    if (digits.startsWith('0') && digits.length === 10) {
       return `254${digits.substring(1)}`;
     }
     if (digits.startsWith('254') && digits.length === 12) {
@@ -136,7 +105,6 @@ const OrderSummary = () => {
   };
 
   const toggleAddressDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
   const selectAddress = (address) => {
     setSelectedAddress(address);
     setIsDropdownOpen(false);
@@ -164,8 +132,7 @@ const OrderSummary = () => {
                 : "Select address"}
             </span>
             <svg
-              className={`h-5 w-5 text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""
-                }`}
+              className={`h-5 w-5 text-gray-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -200,13 +167,13 @@ const OrderSummary = () => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           M-Pesa Payment
         </label>
-        {/* <input
+        <input
           type="tel"
           value={phoneNumber}
           onChange={(e) => setPhoneNumber(e.target.value)}
           placeholder="e.g. 0722000000"
           className="w-full px-4 py-3 border rounded-md shadow-sm"
-        /> */}
+        />
         {paymentError && (
           <p className="mt-2 text-sm text-red-600">{paymentError}</p>
         )}

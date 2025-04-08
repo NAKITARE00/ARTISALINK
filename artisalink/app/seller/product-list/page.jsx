@@ -6,13 +6,15 @@ import { useAppContext } from "@/context/AppContext";
 import Footer from "@/components/seller/Footer";
 import Loading from "@/components/Loading";
 import axios from "axios";
-import { Fascinate } from "next/font/google";
+import toast from "react-hot-toast";
+import UpdateProductModal from '@/components/UpdateProductModal';
 
 const ProductList = () => {
 
   const { router, getToken, user } = useAppContext()
-
   const [products, setProducts] = useState([])
+  const [showModal, setShowModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [loading, setLoading] = useState(true)
 
   const fetchSellerProduct = async () => {
@@ -34,6 +36,13 @@ const ProductList = () => {
     }
   }
 
+  console.log(products)
+
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setShowModal(true);
+  };
+
   useEffect(() => {
     if (user) {
       fetchSellerProduct();
@@ -53,6 +62,7 @@ const ProductList = () => {
                 <th className="px-4 py-3 font-medium truncate">
                   Price
                 </th>
+                <th className="px-4 py-3 font-medium truncate max-sm:hidden">Action</th>
                 <th className="px-4 py-3 font-medium truncate max-sm:hidden">Action</th>
               </tr>
             </thead>
@@ -75,7 +85,8 @@ const ProductList = () => {
                   </td>
                   <td className="px-4 py-3 max-sm:hidden">{product.category}</td>
                   <td className="px-4 py-3">KSH{product.offerPrice}</td>
-                  <td className="px-4 py-3 max-sm:hidden">
+                  <td className="px-4 py-3">{product.price}</td>
+                  <td className="px-4 py-3 flex-row max-sm:hidden">
                     <button onClick={() => router.push(`/product/${product._id}`)} className="flex items-center gap-1 px-1.5 md:px-3.5 py-2 bg-orange-600 text-white rounded-md">
                       <span className="hidden md:block">Visit</span>
                       <Image
@@ -83,6 +94,12 @@ const ProductList = () => {
                         src={assets.redirect_icon}
                         alt="redirect_icon"
                       />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-3"
+                    >
+                      Edit
                     </button>
                   </td>
                 </tr>
@@ -92,6 +109,11 @@ const ProductList = () => {
         </div>
       </div>}
       <Footer />
+      <UpdateProductModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}  // Close modal on cancel
+        product={selectedProduct}  // Pass the selected product for editing
+      />
     </div>
   );
 };

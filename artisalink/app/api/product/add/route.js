@@ -17,10 +17,6 @@ export async function POST(request) {
         const { userId } = getAuth(request);
         const isSeller = await authSeller(userId);
 
-        if (!isSeller) {
-            return NextResponse.json({ success: false, message: "Not authorized" });
-        }
-
         const formData = await request.formData();
         const name = formData.get("name");
         const description = formData.get("description");
@@ -105,7 +101,7 @@ export async function PUT(request) {
             return NextResponse.json({ success: false, message: "Product not found" });
         }
 
-        let image = product.image; // 🖼️ Keep existing images by default
+        let image = product.image;
 
         if (files && files.length > 0 && files[0].size > 0) {
             const uploadResults = await Promise.all(
@@ -127,7 +123,7 @@ export async function PUT(request) {
             image = uploadResults.map((r) => r.secure_url);
         }
 
-        // 🧠 Update the product
+
         product.name = name;
         product.description = description;
         product.category = category;

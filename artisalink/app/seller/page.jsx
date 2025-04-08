@@ -42,6 +42,7 @@ const AddProduct = () => {
         setFiles([])
         setName('')
         setDescription('')
+        setStock('')
         setCategory('WallArt')
         setPrice('')
         setOfferPrice('')
@@ -135,7 +136,7 @@ const AddProduct = () => {
           </div>
           <div className="flex flex-col gap-1 w-32">
             <label className="text-base font-medium" htmlFor="product-price">
-              Product Price
+              Stock
             </label>
             <input
               id="product-price"
@@ -149,7 +150,7 @@ const AddProduct = () => {
           </div>
           <div className="flex flex-col gap-1 w-32">
             <label className="text-base font-medium" htmlFor="offer-price">
-              Offer Price
+              Price
             </label>
             <input
               id="offer-price"

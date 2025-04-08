@@ -8,14 +8,12 @@ import { NextResponse } from "next/server"
 
 export async function GET(request) {
     try {
-
         const { userId } = getAuth(request)
 
-        const isSeller = await authSeller(userId)
-
-        if (!isSeller) {
-            return NextResponse.json({ success: false, message: 'not authorized' })
+        if (!userId) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' })
         }
+
 
         await connectDB()
 

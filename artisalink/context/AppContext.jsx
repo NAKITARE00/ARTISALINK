@@ -2,6 +2,7 @@
 
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
+import { set } from "mongoose";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -21,6 +22,7 @@ export const AppContextProvider = (props) => {
     const { getToken } = useAuth();
 
     const [products, setProducts] = useState([])
+    const [userRole, setUserRole] = useState(null)
     const [userData, setUserData] = useState(false)
     const [isSeller, setIsSeller] = useState(false)
     const [cartItems, setCartItems] = useState({})
@@ -38,6 +40,21 @@ export const AppContextProvider = (props) => {
             toast.error(error.message)
         }
     }
+
+    const fetchUserRole = async () => {
+        if (user?.id) {
+            try {
+                const response = await axios.get(`/api/user/role/${user.id}`);
+                if (response.data.success) {
+                    setUserRole(response.data.data);
+                } else {
+                    setUserRole(null);
+                }
+            } catch (err) {
+                setUserRole(null);
+            }
+        }
+    };
 
     const fetchUserData = async () => {
         try {
@@ -139,8 +156,17 @@ export const AppContextProvider = (props) => {
         }
     }, [user])
 
+    useEffect(() => {
+        if (user) {
+            fetchUserRole()
+        }
+    }, [user])
+
     const value = {
-        user, getToken,
+        user,
+        userRole,
+        setUserRole,
+        getToken,
         currency, router,
         isSeller, setIsSeller,
         userData, fetchUserData,

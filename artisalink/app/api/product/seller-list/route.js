@@ -9,12 +9,6 @@ export async function GET(request) {
     try {
         const { userId } = getAuth(request)
 
-        const isSeller = authSeller(userId)
-
-        if (!isSeller) {
-            return NextResponse.json({ success: false }, "Not authorized")
-        }
-
         await connectDB()
 
         const products = await Product.find({})

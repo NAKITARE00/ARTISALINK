@@ -62,7 +62,7 @@ const ProductList = () => {
                 <th className="px-4 py-3 font-medium truncate">
                   Price
                 </th>
-                <th className="px-4 py-3 font-medium truncate max-sm:hidden">Action</th>
+                <th className="px-4 py-3 font-medium truncate max-sm:hidden">Stock</th>
                 <th className="px-4 py-3 font-medium truncate max-sm:hidden">Action</th>
               </tr>
             </thead>

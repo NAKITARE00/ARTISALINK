@@ -42,7 +42,6 @@ const AddProduct = () => {
         setFiles([])
         setName('')
         setDescription('')
-        setStock('')
         setCategory('WallArt')
         setPrice('')
         setOfferPrice('')
